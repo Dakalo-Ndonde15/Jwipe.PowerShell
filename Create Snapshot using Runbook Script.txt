@@ -1,0 +1,39 @@
+try 
+{
+    "Logging in to Azure..."
+    Connect-AzAccount -Identity
+}
+catch {
+    Write-Error -Message $_.Exception
+    throw $_.Exception
+}
+
+# for individual servers.
+$VmName =  @("app-vm01","VM-AD-SYSTEM01") 
+
+foreach($i in $vmname) {
+
+$VmLocation = get-azvm -Name $i | select -ExpandProperty location
+
+$VmResourceGroup = get-azvm -Name $i | select -ExpandProperty ResourceGroupName
+ 
+$vm = get-azvm -Name $i -ResourceGroupName $VmResourceGroup
+#VM Snapshot
+    Write-Output "VM $($vm.name) OS Disk Snapshot Begin"
+    $snapshotdisk = $vm.StorageProfile
+     
+ 
+        $OSDiskSnapshotConfig = New-AzSnapshotConfig -SourceUri $snapshotdisk.OsDisk.ManagedDisk.id -CreateOption Copy -Location $VmLocation -OsType Windows
+        $snapshotNameOS = "$($vm.name)-NonAzVm_Patching_$(Get-Date -Format ddMMyy)"
+ 
+        # OS Disk Snapshot     
+     
+ 
+            try {
+                New-AzSnapshot -ResourceGroupName $VmResourceGroup -SnapshotName $snapshotNameOS -Snapshot $OSDiskSnapshotConfig -ErrorAction Stop 
+            } catch {
+                $_
+            } 
+                       
+            Write-Output "VM $($vm.name) OS Disk Snapshot End"
+            }
